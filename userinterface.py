@@ -13,6 +13,7 @@ class MainWindow(tk.Tk):
         self.resizable(False, False)
         self.title(t.programName)
         self.geometry("500x500+300+200")
+        self.wm_iconbitmap('VALogo.ico')
         self.frames = {}
         container = tk.Frame(self)
         container.grid_rowconfigure(0, weight=1)
