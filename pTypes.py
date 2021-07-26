@@ -1,11 +1,19 @@
 import pyttsx3
 import classes as c
 
+# Config
 programName = ''
 agentVoice = pyttsx3.init()
 agentVoice.setProperty('rate', 130)
+agentGender = ''
+
 
 cameraOn = False
+
+# Product Information
+version = '0.5'
+creator = 'Mohamed Mostafa'
+email = 'mohamed.01061@gmail.com'
 
 # Helpers
 creatingProfile = False
@@ -63,8 +71,8 @@ eventAfterTime = ["I think you should know that {x} starts after {y}","Remember,
                   ,"Please be aware about {x} which will begin after {y}",
                   "Attention please,It is just {y} before {x} begins",
                   "I think you should finish what yoy are doing quickly\n{x} is going to start after {y}",
-                  "Tn tn tn,{x} is going to start after {y}","It is only {y} for {x}","Hey,{y} for {x}",
-                  "You shouldn't miss {x} after {y} from now","Time time time time time,{x} will begin in just {y}"
+                  "Tin tin tin,{x} is going to start after {y}","It is only {y} for {x}","Hey,{y} for {x}",
+                  "You shouldn't miss {x} after {y} from now","Time time time time time,{x} will begin in just {y}",
                   "Do you know that {x} will begin in only {y}"]
 
 hopeBest = ["I hope the best for you","Be careful","Get ready my little bird","You can do it","Work hard",

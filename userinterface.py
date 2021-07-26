@@ -19,7 +19,8 @@ class MainWindow(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
         container.pack(side='top', fill='both', expand=True)
-        for frame in (LoginPage, MainMenu, AddEvent, DailyEvent, WeeklyEvent, MonthlyEvent, YearlyEvent, CustomEvent):
+        for frame in (LoginPage, MainMenu, AddEvent, DailyEvent, WeeklyEvent, MonthlyEvent, YearlyEvent, CustomEvent,
+                      Settings, Info):
             x = frame(container, self)
             self.frames[frame.__name__] = x
             x.grid(row=0, column=0, sticky='nsew')
@@ -75,13 +76,18 @@ class LoginPage(tk.Frame):
         tk.Label(self, text='Username : ').pack()
         tk.Entry(self, textvariable=self.user).pack()
         tk.Label(self, text='Password : ').pack()
-        tk.Entry(self, textvariable=self.password).pack()
+        tk.Entry(self, textvariable=self.password, show='*').pack()
         tk.Button(self, text='Login using user and pass', command=self.userLogin).pack(pady=20)
 
 
 class MainMenu(tk.Frame):
     def backButton(self):
-        f.sayAndWait(f.getRandomFromList(t.exiting) + " " + t.currentProfile.name)
+        if t.talking:
+            return
+        try:
+            f.sayAndWait(f.getRandomFromList(t.exiting) + " " + t.currentProfile.name)
+        except:
+            return
         t.currentProfile = 0
         t.eventList.clear()
         t.eventListChanged = True
@@ -107,7 +113,103 @@ class MainMenu(tk.Frame):
         tk.Label(self, text=t.programName + "'s Control Panel").pack(pady=10)
         tk.Button(self, text="Add Event", command=lambda: self.controller.showFrame('AddEvent')).pack()
         tk.Button(self, text="Create new profile", command=self.profileCreation).pack()
+        tk.Button(self, text="Settings", command=lambda: self.controller.showFrame('Settings')).pack()
+        tk.Button(self, text="Agent Information", command=lambda: self.controller.showFrame('Info')).pack()
         tk.Button(self, text="I'm out for sometime", command=self.backButton).pack()
+
+
+class Info(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        tk.Label(self, text=t.programName + "'s Information").pack(pady=10)
+        tk.Label(self, text='Program still in BETA',fg='#f00').pack()
+        tk.Label(self, text='Version : ' + t.version).pack()
+        tk.Label(self, text='Dev Name : ' + t.creator).pack()
+        tk.Label(self, text='Dev Email : ' + t.email).pack()
+        tk.Label(self, text='Please, feel free to contact me for any feedback').pack()
+        tk.Button(self, text="Back", command=lambda: self.controller.showFrame('MainMenu')).pack()
+
+
+class Settings(tk.Frame):
+
+    def changeSettings(self):
+        name = self.name.get()
+        gender = self.sex.get()
+
+        if not name:
+            print(name)
+            return
+
+        if gender.upper() != 'MALE' and gender.upper() != 'FEMALE':
+            print(gender)
+            return
+
+        t.cameraOn = f.cameraTest()
+
+        file = open('Config.ini', 'w')
+        file.write('pName:' + t.programName + '\n')
+        file.write('pGender:' + t.agentGender.upper() + '\n')
+        file.write('Camera:' + str(int(t.cameraOn)) + '\n')
+        file.close()
+
+        t.programName = name
+
+        if gender.upper() == "MALE":
+            t.agentVoice.setProperty('voice', t.agentVoice.getProperty('voices')[0].id)
+            t.agentGender = 'MALE'
+        elif gender.upper() == "FEMALE":
+            t.agentVoice.setProperty('voice', t.agentVoice.getProperty('voices')[1].id)
+            t.agentGender = 'FEMALE'
+
+        if not t.talking:
+            f.sayAndWait('Then i am ' + name + " now")
+        self.controller.showFrame('MainMenu')
+
+    def cameraCheck(self):
+        if f.cameraTest():
+            t.cameraOn = True
+            self.camStatus.set('Already have a camera set')
+        else:
+            t.cameraOn = False
+            self.camStatus.set('No camera detected')
+
+        file = open('Config.ini', 'w')
+        file.write('pName:' + t.programName + '\n')
+        file.write('pGender:' + t.agentGender.upper() + '\n')
+        file.write('Camera:' + str(int(t.cameraOn)) + '\n')
+        file.close()
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+
+        self.name = tk.StringVar()
+        self.name.set(t.programName)
+        self.sex = tk.StringVar()
+        self.sex.set(t.agentGender)
+
+        self.camStatus = tk.StringVar()
+
+        if t.cameraOn:
+            self.camStatus.set('Already have a camera set')
+        else:
+            self.camStatus.set('No camera detected')
+
+        tk.Label(self, text=t.programName + '\'s Settings').place(x=200, y=50)
+
+        tk.Label(self, text='Agent Name : ').place(x=100, y=100)
+        tk.Entry(self, textvariable=self.name).place(x=250, y=100)
+
+        tk.Label(self, text='Agent Gender : ').place(x=100, y=150)
+        ttk.Combobox(self, values=['MALE', 'FEMALE'], textvariable=self.sex).place(
+            x=250, y=150)
+
+        tk.Button(self, text='Camera Status : ',command=self.cameraCheck).place(x=100, y=200)
+        tk.Label(self, width=25, textvariable=self.camStatus).place(x=250, y=200)
+
+        tk.Button(self, text='Apply', command=self.changeSettings).place(x=250, y=250)
+        tk.Button(self, text='Back', command=lambda: self.controller.showFrame('MainMenu')).place(x=300, y=250)
 
 
 class AddEvent(tk.Frame):
@@ -170,7 +272,7 @@ class DailyEvent(tk.Frame):
         f.sayRandom(t.finishSettings)
         f.sayAndWait(f.getRandomFromList(t.dailyEventStored).format(x=name))
 
-        if isinstance(t.currentProfile,t.c.Profile):
+        if isinstance(t.currentProfile, t.c.Profile):
             t.eventList = f.getToDayEvents(t.currentProfile.id)
             t.eventListChanged = True
 
@@ -280,7 +382,7 @@ class WeeklyEvent(tk.Frame):
         f.sayRandom(t.finishSettings)
         f.sayAndWait(f.getRandomFromList(t.weeklyEventStored).format(x=name))
 
-        if isinstance(t.currentProfile,t.c.Profile):
+        if isinstance(t.currentProfile, t.c.Profile):
             t.eventList = f.getToDayEvents(t.currentProfile.id)
             t.eventListChanged = True
 
@@ -398,7 +500,7 @@ class MonthlyEvent(tk.Frame):
         f.sayRandom(t.finishSettings)
         f.sayAndWait(f.getRandomFromList(t.monthlyEventStored).format(x=name))
 
-        if isinstance(t.currentProfile,t.c.Profile):
+        if isinstance(t.currentProfile, t.c.Profile):
             t.eventList = f.getToDayEvents(t.currentProfile.id)
             t.eventListChanged = True
 
@@ -509,7 +611,7 @@ class YearlyEvent(tk.Frame):
             return
 
         new = t.c.YearlyEvent(name, "{x}:{y}".format(x=hour, y=min), day, month, t.currentProfile.id
-                               , level, des)
+                              , level, des)
 
         f.insertEvent(new, t.c.EventType.Yearly)
 
@@ -519,7 +621,7 @@ class YearlyEvent(tk.Frame):
         f.sayRandom(t.finishSettings)
         f.sayAndWait(f.getRandomFromList(t.yearlyEventStored).format(x=name))
 
-        if isinstance(t.currentProfile,t.c.Profile):
+        if isinstance(t.currentProfile, t.c.Profile):
             t.eventList = f.getToDayEvents(t.currentProfile.id)
             t.eventListChanged = True
 
@@ -613,7 +715,7 @@ class CustomEvent(tk.Frame):
             return
 
         new = t.c.CustomEvent(name, "{x}:{y}".format(x=hour, y=min), date, t.currentProfile.id
-                               , level, des)
+                              , level, des)
 
         f.insertEvent(new, t.c.EventType.Custom)
 
@@ -623,7 +725,7 @@ class CustomEvent(tk.Frame):
         f.sayRandom(t.finishSettings)
         f.sayAndWait(f.getRandomFromList(t.customEventStored).format(x=name))
 
-        if isinstance(t.currentProfile,t.c.Profile):
+        if isinstance(t.currentProfile, t.c.Profile):
             t.eventList = f.getToDayEvents(t.currentProfile.id)
             t.eventListChanged = True
 

@@ -9,13 +9,24 @@ import pickle
 import datetime as dt
 from imutils import face_utils
 from random import randint
+from time import sleep
 
 
 def sayAndWait(text: str):
+    c = 0
     while t.talking:
-        pass
+        c += 1
+        if c > 5:
+            t.talking = False
+        sleep(1)
 
+    if t.talking:
+        return
     t.talking = True
+
+    if t.agentVoice._inLoop:
+        t.agentVoice.stop()
+
     t.agentVoice.say(text)
     t.agentVoice.runAndWait()
     t.talking = False
@@ -25,9 +36,8 @@ def sayRandom(allSpeech: list):
     sayAndWait(getRandomFromList(allSpeech))
 
 
-def sayEvent(eventName: str, eventDes: str,remainingTime:str):
-
-    sayAndWait(getRandomFromList(t.eventAfterTime).format(x=eventName,y = remainingTime))
+def sayEvent(eventName: str, eventDes: str, remainingTime: str):
+    sayAndWait(getRandomFromList(t.eventAfterTime).format(x=eventName, y=remainingTime))
 
     if eventDes:
         sayAndWait("Be aware that you said also about " + eventName + " the following")
@@ -35,6 +45,21 @@ def sayEvent(eventName: str, eventDes: str,remainingTime:str):
 
     sayAndWait(t.currentProfile.name)
     sayRandom(t.hopeBest)
+
+
+def cameraTest() -> bool:
+    try:
+        x = cv2.VideoCapture(0)
+
+        if x.isOpened():
+            s, img = x.read()
+
+            return s
+        else:
+            return False
+    except:
+        return False
+
 
 def checkFirstTime() -> bool:
     """Check if there's profile or not"""
@@ -107,7 +132,14 @@ def stopProgram(exitCode: int = 0):
                     54 means eventObject is not instance of Custom Event
                     10 means importance level in daily event creation was wrong
     """
-    exit(exitCode)
+    try:
+        exit(exitCode)
+    except Exception:
+        try:
+            import sys
+            sys.exit(exitCode)
+        except:
+            quit(exitCode)
 
 
 def getValueUsingUI(title: str = 'Your Buddy Says', message: str = '', buttonMessage: str = 'Submit') -> str:
@@ -117,6 +149,7 @@ def getValueUsingUI(title: str = 'Your Buddy Says', message: str = '', buttonMes
     window = tk.Tk()
     value = tk.StringVar()
     window.title(title)
+    window.wm_iconbitmap('VALogo.ico')
     window.geometry("500x500+500+250")
     tk.Label(window, text=message).pack()
     tk.Entry(window, textvariable=value).pack()
@@ -139,6 +172,7 @@ def askAcceptance(title: str = 'Your Buddy Says', message: str = '', okText: str
     window = tk.Tk()
     value = tk.BooleanVar()
     window.title(title)
+    window.wm_iconbitmap('VALogo.ico')
     window.geometry("500x500+500+250")
     tk.Label(window, text=message).pack()
     frame = tk.Frame(window)
@@ -336,7 +370,7 @@ def getToDayEvents(profileNumber: int) -> list:
 
     for event in t.dailyEvents:
         if event.userID == profileNumber:
-            result.append((event,False))
+            result.append((event, False))
 
     now = dt.datetime.now()
 
@@ -344,29 +378,29 @@ def getToDayEvents(profileNumber: int) -> list:
 
     for event in t.weeklyEvents:
         if event.day == factor and profileNumber == event.userID:
-            result.append((event,False))
+            result.append((event, False))
         elif event.level == t.c.EventImportanceLevel.Critical and factor == getDayBefore(event.day) \
                 and profileNumber == event.userID:
-            result.append((event,True))
+            result.append((event, True))
 
     factor = int(now.strftime('%d'))
 
     for event in t.monthlyEvents:
         if event.day == factor and profileNumber == event.userID:
-            result.append((event,False))
+            result.append((event, False))
         elif event.level == t.c.EventImportanceLevel.Critical and factor == event.day - 1 \
                 and profileNumber == event.userID:
-            result.append((event,True))
+            result.append((event, True))
 
     factor = (int(now.strftime('%d')), int(now.strftime('%m')))
 
     for event in t.yearlyEvents:
         if event.day == factor[0] and event.month == factor[1] and profileNumber == event.userID:
-            result.append((event,False))
+            result.append((event, False))
         elif event.level == t.c.EventImportanceLevel.Critical and factor[0] == event.day - 1 and factor[
             1] == event.month \
                 and profileNumber == event.userID:
-            result.append((event,True))
+            result.append((event, True))
 
     factor = now.strftime('%d-%m-%Y')
 
@@ -374,10 +408,10 @@ def getToDayEvents(profileNumber: int) -> list:
         x = dt.datetime.strptime(factor, '%d-%m-%Y')
         y = dt.datetime.strptime(event.date, '%d-%m-%Y')
         if factor == event.date and event.userID == profileNumber:
-            result.append((event,False))
+            result.append((event, False))
         elif event.level == t.c.EventImportanceLevel.Critical and (y - x).total_seconds() == 86400 \
                 and profileNumber == event.userID:
-            result.append((event,True))
+            result.append((event, True))
 
     return result
 
@@ -392,7 +426,7 @@ def calculateSeconds(x: str, y: str) -> int:
 def filterEvents(events: list, timeNow: str, secondsTreshold=1) -> list:
     result = list()
 
-    for event,status in events:
+    for event, status in events:
         if calculateSeconds(event.time, timeNow) > secondsTreshold and status:
             result.append(event)
 
@@ -457,8 +491,11 @@ def createUser():
     if t.cameraOn:
         sayAndWait('I will be glad if i know you better\n so please i want to take a picture of you'
                    '\npress any key when you are ready and i will take a picture for you')
-        face = takePicture("Is that you?", cropFace=True)
-        face = getdiscriptors(face)
+        try:
+            face = takePicture("Is that you?", cropFace=True)
+            face = getdiscriptors(face)
+        except:
+            t.cameraOn = False
 
     sayAndWait("I'm glad to see you\nwe all most done\nlast thing i want to ask is a username and password"
                "\nplease be aware that if i couldn't recognize you at anytime\n"

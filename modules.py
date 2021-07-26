@@ -64,8 +64,10 @@ class OnPrelaunch(object):
             elif key == 'pGender':
                 if value.replace('\n', '') == "MALE":
                     t.agentVoice.setProperty('voice', t.agentVoice.getProperty('voices')[0].id)
+                    t.agentGender = 'MALE'
                 elif value.replace('\n', '') == "FEMALE":
                     t.agentVoice.setProperty('voice', t.agentVoice.getProperty('voices')[1].id)
+                    t.agentGender = 'FEMALE'
                 else:
                     self.createConfig()
 
@@ -116,8 +118,10 @@ class OnPrelaunch(object):
 
             if gender.upper() == "MALE":
                 t.agentVoice.setProperty('voice', t.agentVoice.getProperty('voices')[0].id)
+                t.agentGender = 'MALE'
             elif gender.upper() == "FEMALE":
                 t.agentVoice.setProperty('voice', t.agentVoice.getProperty('voices')[1].id)
+                t.agentGender = 'FEMALE'
 
             f.sayAndWait(f.getRandomFromList(t.finishSettings))
 
@@ -201,7 +205,7 @@ class OnRun(object):
         while self.isRunning:
             now = dt.datetime.now().strftime('%H:%M')
             self.cycle(now)
-            if self.sameDay():
+            if not self.sameDay():
                 self.doneToday.clear()
 
                 if isinstance(t.currentProfile,t.c.Profile):
@@ -310,7 +314,6 @@ class OnRun(object):
                         self.doneToday.append(event.name)
 
                 if event.level == t.c.EventImportanceLevel.Critical:
-
                     if notTime:
                         f.sayAndWait(f.getRandomFromList(t.criticalEventTomorrow).format(x=event.name))
                         if event.des:
